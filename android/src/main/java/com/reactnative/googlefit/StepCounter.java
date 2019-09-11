@@ -19,8 +19,6 @@ import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.common.api.Status;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSource;
@@ -30,11 +28,17 @@ import com.google.android.gms.fitness.data.Value;
 import com.google.android.gms.fitness.request.DataSourcesRequest;
 import com.google.android.gms.fitness.request.OnDataPointListener;
 import com.google.android.gms.fitness.request.SensorRequest;
-import com.google.android.gms.fitness.result.DataSourcesResult;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class StepCounter implements OnDataPointListener {
+import androidx.annotation.NonNull;
+
+public class StepCounter implements OnDataPointListener
+{
 
     private ReactContext mReactContext;
     private GoogleFitManager googleFitManager;
@@ -53,26 +57,26 @@ public class StepCounter implements OnDataPointListener {
 
         DataSourcesRequest dataSourceRequest = new DataSourcesRequest.Builder()
                 .setDataTypes(DataType.TYPE_STEP_COUNT_DELTA, DataType.TYPE_STEP_COUNT_CUMULATIVE)
-                .setDataSourceTypes( DataSource.TYPE_DERIVED)
+                .setDataSourceTypes(DataSource.TYPE_DERIVED)
                 .build();
 
-        ResultCallback<DataSourcesResult> dataSourcesResultCallback = new ResultCallback<DataSourcesResult>() {
-            @Override
-            public void onResult(DataSourcesResult dataSourcesResult) {
-                for (DataSource dataSource : dataSourcesResult.getDataSources()) {
-                    DataType type = dataSource.getDataType();
+        Fitness.getSensorsClient(mReactContext, googleFitManager.getGoogleAccount())
+                .findDataSources(dataSourceRequest)
+                .addOnSuccessListener(googleFitManager.getCurrentActivity(), new OnSuccessListener<List<DataSource>>()
+                {
+                    @Override
+                    public void onSuccess(List<DataSource> dataSources) {
+                        for (DataSource dataSource : dataSources) {
+                            DataType type = dataSource.getDataType();
 
-                    if (DataType.TYPE_STEP_COUNT_DELTA.equals(type)
-                            || DataType.TYPE_STEP_COUNT_CUMULATIVE.equals(type)) {
-                        Log.i(TAG, "Register Fitness Listener: " + type);
-                        registerFitnessDataListener(dataSource, type);//DataType.TYPE_STEP_COUNT_DELTA);
+                            if (DataType.TYPE_STEP_COUNT_DELTA.equals(type)
+                                    || DataType.TYPE_STEP_COUNT_CUMULATIVE.equals(type)) {
+                                Log.i(TAG, "Register Fitness Listener: " + type);
+                                registerFitnessDataListener(dataSource, type);//DataType.TYPE_STEP_COUNT_DELTA);
+                            }
+                        }
                     }
-                }
-            }
-        };
-
-        Fitness.SensorsApi.findDataSources(googleFitManager.getGoogleApiClient(), dataSourceRequest)
-                .setResultCallback(dataSourcesResultCallback);
+                });
     }
 
     private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
@@ -83,11 +87,12 @@ public class StepCounter implements OnDataPointListener {
                 .setSamplingRate(3, TimeUnit.SECONDS)
                 .build();
 
-        Fitness.SensorsApi.add(googleFitManager.getGoogleApiClient(), request, this)
-                .setResultCallback(new ResultCallback<Status>() {
+        Fitness.getSensorsClient(mReactContext, googleFitManager.getGoogleAccount()).add(request, this)
+                .addOnCompleteListener(new OnCompleteListener<Void>()
+                {
                     @Override
-                    public void onResult(Status status) {
-                        if (status.isSuccess()) {
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
                             Log.i(TAG, "SensorApi successfully added");
                         }
                     }
@@ -113,7 +118,13 @@ public class StepCounter implements OnDataPointListener {
                 }
             });*/
 
-            if(type.equals(DataType.TYPE_STEP_COUNT_CUMULATIVE)) {
+            if (type.equals(DataType.TYPE_STEP_COUNT_DELTA)) {
+                WritableMap map = Arguments.createMap();
+                map.putDouble("steps", value.asInt());
+                sendEvent(this.mReactContext, "StepDeltaChangedEvent", map);
+            }
+
+            if (type.equals(DataType.TYPE_STEP_COUNT_CUMULATIVE)) {
                 WritableMap map = Arguments.createMap();
                 map.putDouble("steps", value.asInt());
                 sendEvent(this.mReactContext, "StepChangedEvent", map);

@@ -27,9 +27,12 @@ import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.request.DataDeleteRequest;
 import com.google.android.gms.fitness.request.DataReadRequest;
+import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataReadResult;
 import com.google.android.gms.fitness.data.HealthDataTypes;
 import com.google.android.gms.fitness.data.HealthFields;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
 import java.text.DateFormat;
 import java.text.Format;
@@ -62,7 +65,7 @@ public class HeartrateHistory {
         this.dataType = dataType;
     }
 
-    public ReadableArray getHistory(long startTime, long endTime) {
+    public ReadableArray getHistory(long startTime, long endTime) throws Exception {
         DateFormat dateFormat = DateFormat.getDateInstance();
         // for height we need to take time, since GoogleFit foundation - https://stackoverflow.com/questions/28482176/read-the-height-in-googlefit-in-android
 
@@ -77,7 +80,8 @@ public class HeartrateHistory {
 
         DataReadRequest readRequest = readRequestBuilder.build();
 
-        DataReadResult dataReadResult = Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), readRequest).await(1, TimeUnit.MINUTES);
+        Task<DataReadResponse> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).readData(readRequest);
+        DataReadResponse dataReadResult = Tasks.await(task, 1, TimeUnit.MINUTES);
 
         WritableArray map = Arguments.createArray();
 
@@ -134,20 +138,23 @@ public class HeartrateHistory {
 
         @Override
         protected Void doInBackground(Void... params) {
+            try {
+                DataDeleteRequest request = new DataDeleteRequest.Builder()
+                        .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
+                        .addDataType(this.dataType)
+                        .build();
 
-            DataDeleteRequest request = new DataDeleteRequest.Builder()
-                    .setTimeInterval(startTime, endTime, TimeUnit.MILLISECONDS)
-                    .addDataType(this.dataType)
-                    .build();
+                Task<Void> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).deleteData(request);
+                Tasks.await(task, 1, TimeUnit.MINUTES);
 
-            com.google.android.gms.common.api.Status insertStatus =
-                    Fitness.HistoryApi.deleteData(googleFitManager.getGoogleApiClient(), request)
-                            .await(1, TimeUnit.MINUTES);
-
-            if (insertStatus.isSuccess()) {
-                Log.w("myLog", "+Successfully deleted data.");
-            } else {
-                Log.w("myLog", "+Failed to delete data.");
+                if (task.isSuccessful()) {
+                    Log.w(TAG, "+Successfully deleted data.");
+                } else {
+                    Log.w(TAG, "+Failed to delete data.");
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Error occurred: "+e.getMessage());
+                e.printStackTrace();
             }
 
             return null;
@@ -165,26 +172,31 @@ public class HeartrateHistory {
         }
 
         protected Void doInBackground(Void... params) {
-            // Create a new dataset and insertion request.
-            DataSet dataSet = this.Dataset;
+            try {
+                // Create a new dataset and insertion request.
+                DataSet dataSet = this.Dataset;
 
-            // [START insert_dataset]
-            // Then, invoke the History API to insert the data and await the result, which is
-            // possible here because of the {@link AsyncTask}. Always include a timeout when calling
-            // await() to prevent hanging that can occur from the service being shutdown because
-            // of low memory or other conditions.
-            //Log.i(TAG, "Inserting the dataset in the History API.");
-            com.google.android.gms.common.api.Status insertStatus =
-                    Fitness.HistoryApi.insertData(googleFitManager.getGoogleApiClient(), dataSet)
-                            .await(1, TimeUnit.MINUTES);
+                // [START insert_dataset]
+                // Then, invoke the History API to insert the data and await the result, which is
+                // possible here because of the {@link AsyncTask}. Always include a timeout when calling
+                // await() to prevent hanging that can occur from the service being shutdown because
+                // of low memory or other conditions.
+                //Log.i(TAG, "Inserting the dataset in the History API.");
 
-            // Before querying the data, check to see if the insertion succeeded.
-            if (!insertStatus.isSuccess()) {
-                //Log.i(TAG, "There was a problem inserting the dataset.");
-                return null;
+                Task<Void> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).insertData(dataSet);
+                Tasks.await(task, 1, TimeUnit.MINUTES);
+
+                // Before querying the data, check to see if the insertion succeeded.
+                if (!task.isSuccessful()) {
+                    //Log.i(TAG, "There was a problem inserting the dataset.");
+                    return null;
+                }
+
+                //Log.i(TAG, "Data insert was successful!");
+            } catch (Exception e) {
+                Log.w(TAG, "Error occurred: "+e.getMessage());
+                e.printStackTrace();
             }
-
-            //Log.i(TAG, "Data insert was successful!");
 
             return null;
         }
@@ -208,13 +220,12 @@ public class HeartrateHistory {
                 .setType(dataSourceType)
                 .build();
 
-        DataSet dataSet = DataSet.create(dataSource);
-        DataPoint dataPoint = dataSet.createDataPoint().setTimeInterval(startTime, endTime, timeUnit);
+        DataPoint.Builder builder = DataPoint.builder(dataSource).setTimeInterval(startTime, endTime, timeUnit);
 
         float f1 = Float.valueOf(value.toString());
-        dataPoint = dataPoint.setFloatValues(f1);
+        builder.setFloatValues(f1);
 
-        dataSet.add(dataPoint);
+        DataSet dataSet = DataSet.builder(dataSource).add(builder.build()).build();
 
         return dataSet;
     }

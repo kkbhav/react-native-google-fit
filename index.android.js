@@ -118,6 +118,29 @@ class RNGoogleFit {
     )
   }
 
+  _retrieveTodayStepTotal = (callback) => {
+    googleFit.getDailyStepTotal(
+      msg => callback(msg, false),
+      res => {
+        if (res.length > 0) {
+          callback(
+            false,
+            res.map(function(dev) {
+              const obj = {}
+              obj.source =
+                dev.source.appPackage +
+                (dev.source.stream ? ':' + dev.source.stream : '')
+              obj.steps = buildDailySteps(dev.steps)
+              return obj
+            }, this)[0]
+          )
+        } else {
+          callback('There is no any steps data for this period', false)
+        }
+      }
+    )
+  }
+
   /**
    * Get the total steps per day over a specified date range.
    * @param {Object} options getDailyStepCountSamples accepts an options object containing required startDate: ISO8601Timestamp and endDate: ISO8601Timestamp.
@@ -147,6 +170,28 @@ class RNGoogleFit {
       })
     }
     this._retrieveDailyStepCountSamples(startDate, endDate, callback)
+  }
+
+  /**
+   * Get the total steps for today.
+   * @param {Function} callback The function will be called with an object having source and steps info.
+   */
+
+  getDailyStepTotal = (callback) => {
+    if (!callback || typeof callback !== 'function') {
+      return new Promise((resolve, reject) => {
+        this._retrieveTodayStepTotal(
+          (error, result) => {
+            if (!error) {
+              resolve(result)
+            } else {
+              reject(error)
+            }
+          }
+        )
+      })
+    }
+    this._retrieveTodayStepTotal(callback)
   }
 
   /**
@@ -416,6 +461,15 @@ class RNGoogleFit {
       steps => callback(steps)
     )
     this.eventListeners.push(historyObserver)
+  }
+
+  observeStepsDelta = (callback) => {
+    const stepsObserver = DeviceEventEmitter.addListener(
+      'StepDeltaChangedEvent',
+      (steps) => callback(steps)
+    );
+    googleFit.observeSteps();
+    return stepsObserver;
   }
 
   onAuthorize = callback => {

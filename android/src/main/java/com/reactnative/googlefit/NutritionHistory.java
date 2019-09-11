@@ -15,14 +15,19 @@ import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.data.Value;
 import com.google.android.gms.fitness.request.DataReadRequest;
+import com.google.android.gms.fitness.result.DataReadResponse;
 import com.google.android.gms.fitness.result.DataReadResult;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Copyright (c) 2019-present, Juangui Jordán - juangui@gmail.com All rights
@@ -64,7 +69,7 @@ public class NutritionHistory {
         this.googleFitManager = googleFitManager;
     }
 
-    public ReadableArray aggregateDataByDate(long startTime, long endTime) {
+    public ReadableArray aggregateDataByDate(long startTime, long endTime) throws InterruptedException, TimeoutException, ExecutionException {
 
         DateFormat dateFormat = DateFormat.getDateInstance();
         Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
@@ -75,8 +80,8 @@ public class NutritionHistory {
                 .bucketByTime(1, TimeUnit.DAYS)
                 .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS).build();
 
-        DataReadResult dataReadResult = Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), readRequest)
-                .await(1, TimeUnit.MINUTES);
+        Task<DataReadResponse> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).readData(readRequest);
+        DataReadResponse dataReadResult = Tasks.await(task, 1, TimeUnit.MINUTES);
 
         WritableArray map = Arguments.createArray();
 

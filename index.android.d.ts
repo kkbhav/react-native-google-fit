@@ -31,6 +31,10 @@ declare module 'react-native-google-fit' {
       callback?: (isError: boolean, result: any) => void
     ) => Promise<any> | void
 
+    getDailyStepTotal: (
+        callback?: (isError: boolean, result: any) => void
+    ) => Promise<any> | void
+
     buildDailySteps(steps: any): { date: any; value: any }[]
 
     /**
@@ -124,6 +128,8 @@ declare module 'react-native-google-fit' {
     openFit(): void
 
     observeSteps: (callback: (isError: boolean, result: any) => void) => void
+
+    observeStepsDelta: (callback: (isError: boolean, result: any) => void) => { remove: () => void }
 
     observeHistory: (callback: (isError: boolean, result: any) => void) => void
 

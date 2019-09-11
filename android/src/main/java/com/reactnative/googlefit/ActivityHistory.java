@@ -11,8 +11,6 @@
 
 package com.reactnative.googlefit;
 
-import android.support.annotation.Nullable;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -20,37 +18,27 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.fitness.Fitness;
 import com.google.android.gms.fitness.data.Bucket;
 import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataSet;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
-import com.google.android.gms.fitness.data.DataSource;
-import com.google.android.gms.fitness.request.DataSourcesRequest;
 import com.google.android.gms.fitness.request.DataReadRequest;
-import com.google.android.gms.fitness.result.DataReadResult;
-import com.google.android.gms.fitness.result.DataSourcesResult;
-import com.google.android.gms.fitness.data.Device;
+import com.google.android.gms.fitness.result.DataReadResponse;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 
-import java.text.DateFormat;
-import java.text.Format;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
-import java.util.ArrayList;
-
+import java.util.concurrent.TimeoutException;
 
 import static com.google.android.gms.fitness.data.Device.TYPE_WATCH;
 
-public class ActivityHistory {
+public class ActivityHistory
+{
 
     private ReactContext mReactContext;
     private GoogleFitManager googleFitManager;
@@ -69,12 +57,12 @@ public class ActivityHistory {
 
     private static final String TAG = "RNGoogleFit";
 
-    public ActivityHistory(ReactContext reactContext, GoogleFitManager googleFitManager){
+    public ActivityHistory(ReactContext reactContext, GoogleFitManager googleFitManager) {
         this.mReactContext = reactContext;
         this.googleFitManager = googleFitManager;
     }
 
-    public ReadableArray getActivitySamples(long startTime, long endTime) {
+    public ReadableArray getActivitySamples(long startTime, long endTime) throws InterruptedException, TimeoutException, ExecutionException {
         WritableArray results = Arguments.createArray();
         DataReadRequest readRequest = new DataReadRequest.Builder()
                 .aggregate(DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA)
@@ -84,7 +72,8 @@ public class ActivityHistory {
                 .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                 .build();
 
-        DataReadResult dataReadResult = Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), readRequest).await(1, TimeUnit.MINUTES);
+        Task<DataReadResponse> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).readData(readRequest);
+        DataReadResponse dataReadResult = Tasks.await(task, 1, TimeUnit.MINUTES);
 
         List<Bucket> buckets = dataReadResult.getBuckets();
         for (Bucket bucket : buckets) {
@@ -96,8 +85,8 @@ public class ActivityHistory {
                 Date startDate = new Date(start);
                 Date endDate = new Date(end);
                 WritableMap map = Arguments.createMap();
-                map.putDouble("start",start);
-                map.putDouble("end",end);
+                map.putDouble("start", start);
+                map.putDouble("end", end);
                 map.putString("activityName", activityName);
                 String deviceName = "";
                 String sourceId = "";
@@ -141,7 +130,7 @@ public class ActivityHistory {
                 results.pushMap(map);
             }
         }
-        
+
         return results;
     }
 }

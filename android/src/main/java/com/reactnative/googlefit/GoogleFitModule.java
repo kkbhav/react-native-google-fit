@@ -28,6 +28,7 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.uimanager.IllegalViewOperationException;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.HealthDataTypes;
 import com.facebook.react.bridge.WritableMap;
@@ -89,8 +90,9 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
         ReadableArray scopes = options.getArray("scopes");
         ArrayList<String> scopesList = new ArrayList<String>();
 
-        for (Object type : scopes.toArrayList()) {
-            scopesList.add(type.toString());
+        for (int i = 0; i < scopes.size(); i++) {
+            String type = scopes.getString(i);
+            scopesList.add(type);
         }
 
         mGoogleFitManager.authorize(scopesList);
@@ -141,9 +143,19 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
                                          Callback successCallback) {
 
         try {
-            mGoogleFitManager.getStepHistory().aggregateDataByDate((long) startDate, (long) endDate, successCallback);
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+            successCallback.invoke(mGoogleFitManager.getStepHistory().aggregateDataByDate((long) startDate, (long) endDate));
+        } catch (Exception e) {
+            handleException(e, errorCallback);
+        }
+    }
+
+    @ReactMethod
+    public void getDailyStepTotal(Callback errorCallback,
+                                  Callback successCallback) {
+        try {
+            successCallback.invoke(mGoogleFitManager.getStepHistory().getDailyTotal());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -155,8 +167,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
         try {
             successCallback.invoke(mGoogleFitManager.getActivityHistory().getActivitySamples((long)startDate, (long)endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -168,8 +180,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
         try {
             successCallback.invoke(mGoogleFitManager.getDistanceHistory().aggregateDataByDate((long) startDate, (long) endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -183,8 +195,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_WEIGHT);
             successCallback.invoke(bodyHistory.getHistory((long)startDate, (long)endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -198,8 +210,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_HEIGHT);
             successCallback.invoke(bodyHistory.getHistory((long)startDate, (long)endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -212,8 +224,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_HEIGHT);
             successCallback.invoke(bodyHistory.save(heightSample));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -227,8 +239,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
         try {
             successCallback.invoke(mGoogleFitManager.getCalorieHistory().aggregateDataByDate((long) startDate, (long) endDate, basalCalculation));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -238,8 +250,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
                          Callback successCallback) {
         try {
             successCallback.invoke(mGoogleFitManager.getCalorieHistory().saveFood(foodSample));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -250,8 +262,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
                                          Callback successCallback) {
         try {
             successCallback.invoke(mGoogleFitManager.getNutritionHistory().aggregateDataByDate((long) startDate, (long) endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -264,8 +276,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_WEIGHT);
             successCallback.invoke(bodyHistory.save(weightSample));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -275,8 +287,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_WEIGHT);
             successCallback.invoke(bodyHistory.delete(options));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -286,8 +298,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             BodyHistory bodyHistory = mGoogleFitManager.getBodyHistory();
             bodyHistory.setDataType(DataType.TYPE_HEIGHT);
             successCallback.invoke(bodyHistory.delete(options));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -295,7 +307,7 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     public void isAvailable(Callback errorCallback, Callback successCallback) { // true if GoogleFit installed
         try {
             successCallback.invoke(isAvailableCheck());
-        } catch (IllegalViewOperationException e) {
+        } catch (Exception e) {
             errorCallback.invoke(e.getMessage());
         }
     }
@@ -304,7 +316,7 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
     public void isEnabled(Callback errorCallback, Callback successCallback) { // true if permission granted
         try {
             successCallback.invoke(isEnabledCheck());
-        } catch (IllegalViewOperationException e) {
+        } catch (Exception e) {
             errorCallback.invoke(e.getMessage());
         }
     }
@@ -347,8 +359,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             HeartrateHistory heartrateHistory = mGoogleFitManager.getHeartrateHistory();
             heartrateHistory.setDataType(HealthDataTypes.TYPE_BLOOD_PRESSURE);
             successCallback.invoke(heartrateHistory.getHistory((long)startDate, (long)endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
@@ -362,8 +374,16 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
             HeartrateHistory heartrateHistory = mGoogleFitManager.getHeartrateHistory();
             heartrateHistory.setDataType(DataType.TYPE_HEART_RATE_BPM);
             successCallback.invoke(heartrateHistory.getHistory((long)startDate, (long)endDate));
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
+    }
+
+    private void handleException(Exception e, Callback errorCallback) {
+        boolean isRecoverable = e instanceof UserRecoverableAuthException;
+        if (mGoogleFitManager != null && isRecoverable) {
+            mGoogleFitManager.authorize(new ArrayList<String>());
+        }
+        errorCallback.invoke(e.getMessage());
     }
 }

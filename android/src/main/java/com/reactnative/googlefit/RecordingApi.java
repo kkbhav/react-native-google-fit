@@ -11,34 +11,25 @@
 
 package com.reactnative.googlefit;
 
-import com.reactnative.googlefit.GoogleFitManager;
-
-import com.facebook.react.bridge.ReactContext;
-
-import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.google.android.gms.fitness.Fitness;
-import com.google.android.gms.fitness.FitnessStatusCodes;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.fitness.data.DataType;
-import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.Callback;
-import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableMap;
-
-import com.google.android.gms.fitness.result.ListSubscriptionsResult;
-import com.google.android.gms.fitness.data.Subscription;
-
 import com.facebook.react.modules.core.DeviceEventManagerModule;
-import android.support.annotation.Nullable;
+import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.data.DataType;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 
 import java.util.ArrayList;
 
+import androidx.annotation.Nullable;
 
-public class RecordingApi {
+
+public class RecordingApi
+{
 
     private ReactContext reactContext;
     private GoogleFitManager googleFitManager;
@@ -64,7 +55,7 @@ public class RecordingApi {
         return dataTypeName.toUpperCase() + "_RECORDING";
     }
 
-    public RecordingApi (ReactContext reactContext, GoogleFitManager googleFitManager) {
+    public RecordingApi(ReactContext reactContext, GoogleFitManager googleFitManager) {
 
         this.reactContext = reactContext;
         this.googleFitManager = googleFitManager;
@@ -89,33 +80,34 @@ public class RecordingApi {
 
             final String eventName = getEventName(dataTypeName);
 
-            Fitness.RecordingApi.subscribe(googleFitManager.getGoogleApiClient(), dataType)
-                    .setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(@NonNull Status status) {
-                            WritableMap map = Arguments.createMap();
+            Task<Void> task = Fitness.getRecordingClient(reactContext, googleFitManager.getGoogleAccount()).subscribe(dataType);
+            task.addOnCompleteListener(googleFitManager.getCurrentActivity(), new OnCompleteListener<Void>()
+            {
+                @Override
+                public void onComplete(@androidx.annotation.NonNull Task<Void> task) {
+                    WritableMap map = Arguments.createMap();
 
-                            map.putString("type", eventName);
+                    map.putString("type", eventName);
 
-                            if (status.isSuccess()) {
-                                map.putBoolean("recording", true);
-                                Log.i(TAG, "RecordingAPI - Connected");
-                                sendEvent(reactContext, eventName, map);
-                            } else {
-                                map.putBoolean("recording", false);
-                                Log.i(TAG, "RecordingAPI - Error connecting");
-                                sendEvent(reactContext, eventName, map);
-                            }
-                        }
-                    });
+                    if (task.isSuccessful()) {
+                        map.putBoolean("recording", true);
+                        Log.i(TAG, "RecordingAPI - Connected");
+                        sendEvent(reactContext, eventName, map);
+                    } else {
+                        map.putBoolean("recording", false);
+                        Log.i(TAG, "RecordingAPI - Error connecting");
+                        sendEvent(reactContext, eventName, map);
+                    }
+                }
+            });
         }
     }
 
 
     private void sendEvent(ReactContext reactContext,
-        String eventName, @Nullable WritableMap params) {
+                           String eventName, @Nullable WritableMap params) {
         reactContext
-            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            .emit(eventName, params);
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(eventName, params);
     }
 }
