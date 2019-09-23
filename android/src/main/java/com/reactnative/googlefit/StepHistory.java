@@ -12,7 +12,7 @@
 package com.reactnative.googlefit;
 
 import android.app.Activity;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -152,13 +152,14 @@ public class StepHistory
         }
 
         try {
-            Tasks.await(Tasks.whenAll((Task<?>[]) tasks.toArray()), 1, TimeUnit.MINUTES);
+            Tasks.await(Tasks.whenAllComplete((Task<?>[]) tasks.toArray()), 1, TimeUnit.MINUTES);
         } catch (Exception e) {
             // Nothing to do
         }
         for (int i = 0; i < dataSources.size(); i++) {
             Task<DataReadResponse> dataReadResponseTask = tasks.get(i);
             DataSource dataSource = dataSources.get(i);
+            Tasks.await(dataReadResponseTask, 5, TimeUnit.SECONDS);
             if (dataReadResponseTask.isSuccessful()) {
                 DataReadResponse dataReadResult = dataReadResponseTask.getResult();
                 WritableMap source = Arguments.createMap();
