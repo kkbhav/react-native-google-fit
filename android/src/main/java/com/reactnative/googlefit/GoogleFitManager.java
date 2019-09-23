@@ -70,7 +70,6 @@ public class GoogleFitManager implements ActivityEventListener
         this.scopes = new Scope[]{new Scope(Scopes.EMAIL), new Scope(Scopes.FITNESS_ACTIVITY_READ)};
 
         mReactContext.addActivityEventListener(this);
-        mReactContext.addLifecycleEventListener(this);
 
         this.mStepCounter = new StepCounter(mReactContext, this, activity);
         this.stepHistory = new StepHistory(mReactContext, this);
