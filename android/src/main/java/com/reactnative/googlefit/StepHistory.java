@@ -158,12 +158,12 @@ public class StepHistory
         }
         for (int i = 0; i < dataSources.size(); i++) {
             Task<DataReadResponse> dataReadResponseTask = tasks.get(i);
-            DataSource dataSource = dataSources.get(i);
             Tasks.await(dataReadResponseTask, 5, TimeUnit.SECONDS);
-            if (dataReadResponseTask.isSuccessful()) {
-                DataReadResponse dataReadResult = dataReadResponseTask.getResult();
+            DataReadResponse dataReadResult = dataReadResponseTask.getResult();
+            if (dataReadResponseTask.isSuccessful() || dataReadResult != null) {
                 WritableMap source = Arguments.createMap();
                 WritableArray steps = Arguments.createArray();
+                DataSource dataSource = dataSources.get(i);
 
                 processDataSource(dataSource, source);
 
