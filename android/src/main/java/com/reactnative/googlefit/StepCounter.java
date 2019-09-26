@@ -12,7 +12,7 @@
 package com.reactnative.googlefit;
 
 import android.app.Activity;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -54,7 +54,10 @@ public class StepCounter implements OnDataPointListener
     }
 
     public void findFitnessDataSources() {
-
+        Activity activity = googleFitManager.getCurrentActivity();
+        if (activity == null) {
+            return;
+        }
         DataSourcesRequest dataSourceRequest = new DataSourcesRequest.Builder()
                 .setDataTypes(DataType.TYPE_STEP_COUNT_DELTA, DataType.TYPE_STEP_COUNT_CUMULATIVE)
                 .setDataSourceTypes(DataSource.TYPE_DERIVED)
@@ -62,7 +65,7 @@ public class StepCounter implements OnDataPointListener
 
         Fitness.getSensorsClient(mReactContext, googleFitManager.getGoogleAccount())
                 .findDataSources(dataSourceRequest)
-                .addOnSuccessListener(googleFitManager.getCurrentActivity(), new OnSuccessListener<List<DataSource>>()
+                .addOnSuccessListener(activity, new OnSuccessListener<List<DataSource>>()
                 {
                     @Override
                     public void onSuccess(List<DataSource> dataSources) {
@@ -80,6 +83,10 @@ public class StepCounter implements OnDataPointListener
     }
 
     private void registerFitnessDataListener(DataSource dataSource, DataType dataType) {
+        Activity activity = googleFitManager.getCurrentActivity();
+        if (activity == null) {
+            return;
+        }
 
         SensorRequest request = new SensorRequest.Builder()
                 .setDataSource(dataSource)
