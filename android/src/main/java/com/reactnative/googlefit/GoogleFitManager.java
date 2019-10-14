@@ -142,16 +142,14 @@ public class GoogleFitManager implements ActivityEventListener
     }
 
     public void authorize(ArrayList<String> userScopes) {
-        ArrayList<Scope> _scopes = new ArrayList<>();
-        if (userScopes.size() != 0) {
+        if (userScopes.size() > 0) {
+            this.scopes = new Scope[userScopes.size()];
             for (int i = 0; i < userScopes.size(); i++) {
-                _scopes.add(new Scope(userScopes.get(i)));
+                this.scopes[i] = new Scope(userScopes.get(i));
             }
         } else {
-            _scopes.add(new Scope(Scopes.EMAIL));
-            _scopes.add(new Scope(Scopes.FITNESS_ACTIVITY_READ));
+            this.scopes = new Scope[]{new Scope(Scopes.EMAIL), new Scope(Scopes.FITNESS_ACTIVITY_READ)};
         }
-        this.scopes = (Scope[]) _scopes.toArray();
 
         if (!GoogleSignIn.hasPermissions(GoogleSignIn.getLastSignedInAccount(this.mReactContext), this.scopes)) {
             if (mAuthInProgress) {

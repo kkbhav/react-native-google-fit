@@ -19,6 +19,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.fitness.Fitness;
+import com.google.android.gms.fitness.RecordingClient;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -37,14 +38,14 @@ public class RecordingApi
     private static final String TAG = "RecordingApi";
 
     @Nullable
-    public static DataType getDataType(String dataTypeName) {
+    public static DataType[] getDataType(String dataTypeName) {
         switch (dataTypeName) {
             case "step":
-                return DataType.TYPE_STEP_COUNT_CUMULATIVE;
+                return new DataType[]{DataType.TYPE_STEP_COUNT_CUMULATIVE, DataType.TYPE_STEP_COUNT_DELTA};
             case "distance":
-                return DataType.TYPE_DISTANCE_DELTA;
+                return new DataType[]{DataType.TYPE_DISTANCE_DELTA};
             case "activity":
-                return DataType.TYPE_ACTIVITY_SAMPLES;
+                return new DataType[]{DataType.TYPE_ACTIVITY_SEGMENT};
             default:
                 Log.v(TAG, "Unknown data type " + dataTypeName);
                 return null;
@@ -71,7 +72,7 @@ public class RecordingApi
 
 
         for (String dataTypeName : dataTypesList) {
-            DataType dataType = getDataType(dataTypeName);
+            DataType[] dataType = getDataType(dataTypeName);
 
             // Just skip unknown data types
             if (dataType == null) {
@@ -80,7 +81,15 @@ public class RecordingApi
 
             final String eventName = getEventName(dataTypeName);
 
-            Task<Void> task = Fitness.getRecordingClient(reactContext, googleFitManager.getGoogleAccount()).subscribe(dataType);
+            RecordingClient client = Fitness.getRecordingClient(reactContext, googleFitManager.getGoogleAccount());
+
+            Task<Void> task = client.subscribe(dataType[0]);
+            if (dataType.length > 1) {
+                for (int i = 1; i < dataType.length; i++) {
+                    DataType d = dataType[i];
+                    client.subscribe(d);
+                }
+            }
             task.addOnCompleteListener(googleFitManager.getCurrentActivity(), new OnCompleteListener<Void>()
             {
                 @Override
