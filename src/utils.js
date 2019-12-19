@@ -8,15 +8,16 @@ export function buildDailySteps(steps) {
     const dateFormatted = getFormattedDate(new Date(step.startDate))
 
     if (!(dateFormatted in results)) {
-      results[dateFormatted] = 0
+      results[dateFormatted] = { steps: 0, isUserInput: false };
     }
 
-    results[dateFormatted] += step.steps
+    results[dateFormatted].steps += step.steps
+    results[dateFormatted].isUserInput = step.isUserInput || results[dateFormatted].isUserInput;
   }
 
   const dateMap = []
   for (const index in results) {
-    dateMap.push({ date: index, value: results[index] })
+    dateMap.push({ date: index, value: results[index].steps, isUserInput: results[index].isUserInput})
   }
   return dateMap
 }
