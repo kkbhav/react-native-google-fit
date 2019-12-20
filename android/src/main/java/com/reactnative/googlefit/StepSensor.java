@@ -1,12 +1,11 @@
 /**
  * Copyright (c) 2017-present, Stanislav Doskalenko - doskalenko.s@gmail.com
  * All rights reserved.
- *
+ * <p>
  * This source code is licensed under the MIT-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
+ * <p>
  * Based on Asim Malik android source code, copyright (c) 2015
- *
  **/
 
 package com.reactnative.googlefit;
@@ -19,7 +18,6 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -29,6 +27,8 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.List;
+
+import androidx.annotation.Nullable;
 
 public class StepSensor implements SensorEventListener {
 
@@ -48,7 +48,7 @@ public class StepSensor implements SensorEventListener {
         boolean stepCounter = hasStepCounter();
         Log.i(TAG, "hasStepCounter: " + stepCounter);
 
-        if(stepCounter) {
+        if (stepCounter) {
             mSensorManager = (SensorManager) reactContext.getSystemService(reactContext.SENSOR_SERVICE);
         }
     }
@@ -60,7 +60,7 @@ public class StepSensor implements SensorEventListener {
         int currentApiVersion = Build.VERSION.SDK_INT;
         // Check that the device supports the step counter and detector sensors
         return currentApiVersion >= 19
-                && pm.hasSystemFeature (PackageManager.FEATURE_SENSOR_STEP_COUNTER)
+                && pm.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_COUNTER)
                 && pm.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_DETECTOR);
 
     }
@@ -82,7 +82,6 @@ public class StepSensor implements SensorEventListener {
         Sensor mySensor = sensorEvent.sensor;
 
         Log.i(TAG, "onSensorChanged");
-
 
 
         if (mySensor.getType() == Sensor.TYPE_STEP_COUNTER) {
