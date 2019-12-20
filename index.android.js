@@ -480,15 +480,6 @@ class RNGoogleFit {
     this.eventListeners.push(historyObserver)
   }
 
-  observeStepsDelta = (callback) => {
-    const stepsObserver = DeviceEventEmitter.addListener(
-      'StepDeltaChangedEvent',
-      (steps) => callback(steps)
-    );
-    googleFit.observeSteps();
-    return stepsObserver;
-  }
-
   onAuthorize = callback => {
     const authObserver = DeviceEventEmitter.addListener(
       'GoogleFitAuthorizeSuccess',

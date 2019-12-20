@@ -59,36 +59,47 @@ public class StepHistory
         this.googleFitManager = googleFitManager;
     }
 
-    public void getUserInputSteps(long startTime, long endTime, final Callback successCallback) {
+    public void getUserInputSteps(final long startTime, final long endTime, final Callback successCallback) {
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        dateFormat.setTimeZone(TimeZone.getDefault());
+        new Thread(new Runnable()
+        {
+            @Override
+            public void run() {
+                try {
+                    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+                    dateFormat.setTimeZone(TimeZone.getDefault());
 
-        Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
-        Log.i(TAG, "Range End: " + dateFormat.format(endTime));
+                    Log.i(TAG, "Range Start: " + dateFormat.format(startTime));
+                    Log.i(TAG, "Range End: " + dateFormat.format(endTime));
 
-        final DataReadRequest readRequest = new DataReadRequest.Builder()
-            .read(DataType.TYPE_STEP_COUNT_DELTA)
-            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
-            .build();
+                    final DataReadRequest readRequest = new DataReadRequest.Builder()
+                            .read(DataType.TYPE_STEP_COUNT_DELTA)
+                            .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
+                            .build();
 
-        DataReadResult dataReadResult =
-            Fitness.HistoryApi.readData(googleFitManager.getGoogleApiClient(), readRequest).await(1, TimeUnit.MINUTES);
 
-        DataSet stepData = dataReadResult.getDataSet(DataType.TYPE_STEP_COUNT_DELTA);
+                    Task<DataReadResponse> task = Fitness.getHistoryClient(mReactContext, googleFitManager.getGoogleAccount()).readData(readRequest);
+                    DataReadResponse dataReadResult = Tasks.await(task, 1, TimeUnit.MINUTES);
 
-        int userInputSteps = 0;
+                    DataSet stepData = dataReadResult.getDataSet(DataType.TYPE_STEP_COUNT_DELTA);
 
-        for (DataPoint dp : stepData.getDataPoints()) {
-            for(Field field : dp.getDataType().getFields()) {
-                if("user_input".equals(dp.getOriginalDataSource().getStreamName())){
-                    int steps = dp.getValue(field).asInt();
-                    userInputSteps += steps;
+                    int userInputSteps = 0;
+
+                    for (DataPoint dp : stepData.getDataPoints()) {
+                        for(Field field : dp.getDataType().getFields()) {
+                            if("user_input".equals(dp.getOriginalDataSource().getStreamName())){
+                                int steps = dp.getValue(field).asInt();
+                                userInputSteps += steps;
+                            }
+                        }
+                    }
+
+                    successCallback.invoke(userInputSteps);
+                } catch (Exception e) {
+                    successCallback.invoke(0);
                 }
             }
-        }
-
-        successCallback.invoke(userInputSteps);
+        }).start();
     }
 
     public void aggregateDataByDate(final long startTime, final long endTime, final Callback errorCallback, final Callback successCallback) throws TimeoutException, InterruptedException, ExecutionException {
@@ -170,11 +181,7 @@ public class StepHistory
 
                            //Check how many steps were walked and recorded in specified days
                            readRequest = new DataReadRequest.Builder()
-                                   .aggregate(dataSource
-                                           //DataType.TYPE_STEP_COUNT_DELTA
-                                           ,
-                                           //DataType.AGGREGATE_STEP_COUNT_DELTA
-                                           aggregateType)
+                                   .aggregate(dataSource, aggregateType) //DataType.TYPE_STEP_COUNT_DELTA, DataType.AGGREGATE_STEP_COUNT_DELTA
                                    .bucketByTime(1, TimeUnit.DAYS) // Full-day resolution
                                    .setTimeRange(startTime, endTime, TimeUnit.MILLISECONDS)
                                    .build();

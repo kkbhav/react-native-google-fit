@@ -139,8 +139,6 @@ declare module 'react-native-google-fit' {
 
     observeSteps: (callback: (isError: boolean, result: any) => void) => void
 
-    observeStepsDelta: (callback: (isError: boolean, result: any) => void) => { remove: () => void }
-
     observeHistory: (callback: (isError: boolean, result: any) => void) => void
 
     onAuthorize: (callback: (isError: boolean, result: any) => void) => void

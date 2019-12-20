@@ -1,18 +1,16 @@
 /**
  * Copyright (c) 2017-present, Stanislav Doskalenko - doskalenko.s@gmail.com
  * All rights reserved.
- *
+ * <p>
  * This source code is licensed under the MIT-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
+ * <p>
  * Based on Asim Malik android source code, copyright (c) 2015
- *
  **/
 
 package com.reactnative.googlefit;
 
 import android.app.Activity;
-import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Arguments;
@@ -36,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 public class StepCounter implements OnDataPointListener
 {
@@ -125,7 +124,7 @@ public class StepCounter implements OnDataPointListener
                 }
             });*/
 
-            if(type.equals(DataType.TYPE_STEP_COUNT_DELTA)) {
+            if (type.equals(DataType.TYPE_STEP_COUNT_DELTA)) {
                 WritableMap map = Arguments.createMap();
                 map.putDouble("steps", value.asInt());
                 sendEvent(this.mReactContext, "StepChangedEvent", map);
