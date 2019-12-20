@@ -203,6 +203,14 @@ class RNGoogleFit {
   getUserInputSteps = (options, callback) => {
     const startDate = !isNil(options.startDate) ? Date.parse(options.startDate) : (new Date()).setHours(0, 0, 0, 0)
     const endDate = !isNil(options.endDate) ? Date.parse(options.endDate) : (new Date()).valueOf()
+    if (!callback || typeof callback !== 'function') {
+      return new Promise((resolve, reject) => {
+        googleFit.getUserInputSteps(startDate, endDate,
+          (msg) => reject(msg),
+          (res) => resolve(res)
+        )
+      });
+    }
     googleFit.getUserInputSteps(startDate, endDate,
       (msg) => callback(msg, false),
       (res) => {
