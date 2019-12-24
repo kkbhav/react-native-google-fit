@@ -181,8 +181,8 @@ public class GoogleFitModule extends ReactContextBaseJavaModule implements Lifec
 
         try {
             mGoogleFitManager.getStepHistory().getUserInputSteps((long) startDate, (long) endDate, successCallback);
-        } catch (IllegalViewOperationException e) {
-            errorCallback.invoke(e.getMessage());
+        } catch (Exception e) {
+            handleException(e, errorCallback);
         }
     }
 
